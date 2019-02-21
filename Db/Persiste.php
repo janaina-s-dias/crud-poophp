@@ -60,5 +60,51 @@ class Persiste{
 
 		return $retorno;
 	}
+
+	public static function Delete($obj){
+
+		// ReflectionClass é usado para inspecionar a estrutura da classe de $obj
+		$rf = new ReflectionClass($obj);
+
+		// Obtem o nome da classe (da tabela no BD)
+		$aux = explode("\\",$rf->name);
+		$classe = array_pop($aux);
+
+		$nomesColunas = "";
+		$valoresColunas = "";
+
+		foreach($rf->getProperties() as $v){
+			$nomesColunas .= strlen($nomesColunas) == 0 ? $v->name : ','.$v->name;
+			$valoresColunas .= strlen($valoresColunas) == 0 ? "'".$obj->{'get'.$v->name}."'" : ",'".$obj->{'get'.$v->name}."'";
+		}
+
+        // Monta comando SQL
+        $sql = "delete from $classe (".$nomesColunas.") where (".$valoresColunas.")";
+
+		try {
+			// Cria objeto PDO
+			$c = new PDO(hostDb,usuario,senha);
+
+			// Configura o comportamento no caso de erros: levanta exceção.
+			$c->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+			// Executa comando SQL
+			$c->exec($sql);
+
+			$retorno = true;
+
+		// Desvia para catch no caso de erros.	
+		} catch (PDOException $pex) {
+			echo $pex->getMessage();
+			$retorno = false;
+
+		// Sempre executa o bloco finally, tendo ocorrido ou não erros no bloco TRY	
+		} finally {
+			$c=null;
+		}
+
+		return $retorno;
+
+	}
 }
 ?>
